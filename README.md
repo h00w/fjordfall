@@ -1,6 +1,22 @@
+<div align="center">
+
+<img src="assets/fjordfall-contest-cover.webp" alt="Fjordfall Vikings face the dragon across the five realms" width="100%">
+
 # Fjordfall: The Five Hunts
 
-![Fjordfall contest cover](assets/fjordfall-contest-cover.webp)
+**Gather your warband. Hunt across five realms. Face the dragon.**
+
+[![Build and game flow](https://github.com/h00w/fjordfall/actions/workflows/ci.yml/badge.svg)](https://github.com/h00w/fjordfall/actions/workflows/ci.yml)
+[![Demo owner private](https://img.shields.io/badge/Playable%20demo-owner--private-C39259?style=flat-square)](https://fjordfall-uniplay.hendar2-0.chatgpt.site)
+[![Players 1 to 10](https://img.shields.io/badge/Players-1%E2%80%9310-287C85?style=flat-square)](#play-modes)
+[![No game account](https://img.shields.io/badge/Game%20account-not%20required-527D56?style=flat-square)](#how-to-play)
+
+[![Portfolio](https://img.shields.io/badge/Portfolio-hendarmawan.se-0B3D91?style=flat-square&logo=googlechrome&logoColor=white)](https://hendarmawan.se)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-hender-0A66C2?style=flat-square&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/hender/)
+[![GitHub](https://img.shields.io/badge/GitHub-@h00w-181717?style=flat-square&logo=github)](https://github.com/h00w)
+[![Hugging Face](https://img.shields.io/badge/Hugging%20Face-h0000w-FFD21E?style=flat-square&logo=huggingface&logoColor=black)](https://huggingface.co/h0000w)
+
+</div>
 
 A name-only multiplayer Viking arena for 1–10 people. Create a six-character room, share its invite URL, and let the room creator start whenever they wish.
 
