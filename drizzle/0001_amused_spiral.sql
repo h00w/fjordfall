@@ -1,0 +1,1 @@
+CREATE INDEX `idx_players_room_code` ON `players` (`room_code`);

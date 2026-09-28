@@ -1,0 +1,38 @@
+export const STAGES = [
+  { realm: "Raven Shore", map: "ISLANDS", monster: "Mossling", size: "SMALL", hp: 12, accent: "#a6d69f", lore: "Defeat the Mossling and open the Rune Gate." },
+  { realm: "The Hanging Falls", map: "SKY ISLANDS", monster: "Storm Troll", size: "MEDIUM", hp: 18, accent: "#a8ddf4", lore: "Hold the bridge above the clouds." },
+  { realm: "The Whale Road", map: "SEA", monster: "Deepjaw", size: "LARGE", hp: 24, accent: "#79c7d9", lore: "Hunt the beast beneath the waves." },
+  { realm: "The Sunken Hall", map: "UNDERWATER", monster: "Abyss Warden", size: "LARGE", hp: 22, accent: "#79dfc3", lore: "Recover the fire rune in the drowned hall." },
+  { realm: "Dragon's Roost", map: "SKY ISLANDS", monster: "Fjordwyrm", size: "BOSS", hp: 42, accent: "#f6ad67", lore: "The final hunt. Stand together." },
+] as const;
+
+export type GameState = {
+  code: string;
+  stage: number;
+  hp: number;
+  maxHp: number;
+  status: "lobby" | "running" | "victory" | "defeat";
+  mode: "expedition" | "duel";
+  difficulty: "slow" | "medium";
+  hostId: string;
+  round: number;
+  enemyX: number;
+  enemyY: number;
+  gateOpen: boolean;
+  winnerId: string | null;
+  eventSeq: number;
+  message: string;
+  players: { id: string; name: string; x: number; y: number; hp: number; strikes: number; ready: boolean; direction: string; reviveTarget: string | null; reviveStartedAt: number; active: boolean }[];
+  selfId: string;
+};
+
+export const MAX_PLAYERS = 10;
+export const MONSTER = { x: 72, y: 50 };
+export const GATE = { x: 88, y: 50 };
+export const distance = (a: {x:number;y:number}, b: {x:number;y:number}) => Math.hypot(a.x-b.x,a.y-b.y);
+export function cleanName(value: unknown) {
+  return typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, 18) : "";
+}
+export function cleanCode(value: unknown) {
+  return typeof value === "string" ? value.trim().toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 6) : "";
+}

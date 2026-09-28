@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1790589156627,
+      "tag": "0000_smart_gwen_stacy",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1790589195946,
+      "tag": "0001_amused_spiral",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790618396269,
+      "tag": "0002_mighty_old_lace",
+      "breakpoints": true
+    }
+  ]
+}
