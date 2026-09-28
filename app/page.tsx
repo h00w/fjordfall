@@ -17,6 +17,8 @@ export default function Home() {
   const [sound, setSound] = useState(false);
   const [clock, setClock] = useState(0);
   const serial = useRef(0);
+  const lastApplied = useRef(0);
+  const pollPending = useRef(false);
   const seenEvent = useRef(0);
   const audio = useRef<AudioContext | null>(null);
 
@@ -68,7 +70,8 @@ export default function Home() {
     } catch {}
   }, [sound]);
   const apply = useCallback((next: GameState, requestId: number) => {
-    if (requestId < serial.current) return;
+    if (requestId < lastApplied.current) return;
+    lastApplied.current = requestId;
     setGame(next);
     if (next.eventSeq > seenEvent.current && next.message) {
       seenEvent.current = next.eventSeq;
@@ -78,6 +81,8 @@ export default function Home() {
   }, []);
   const action = useCallback(async (type: string, extra: Record<string, unknown> = {}) => {
     if (!session) return;
+    if (type === "state" && pollPending.current) return;
+    if (type === "state") pollPending.current = true;
     const requestId = ++serial.current;
     try {
       const response = await fetch("/api/game", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type, ...session, ...extra }) });
@@ -86,6 +91,7 @@ export default function Home() {
       apply(body, requestId); setError("");
       if (type === "attack") beep();
     } catch (e) { if(type === "state") setError("Connection interrupted. Reconnecting…"); else { setNotice(e instanceof Error ? e.message : "Action failed."); window.setTimeout(() => setNotice(""), 2800); } }
+    finally { if (type === "state") pollPending.current = false; }
   }, [session, apply, beep]);
   useEffect(() => {
     if (!session) return;
