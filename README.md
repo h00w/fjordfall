@@ -12,9 +12,9 @@ A name-only multiplayer Viking arena for 1–10 people. Create a six-character r
 
 1. Type a Viking name and create a room. Share the six-letter code or the invite link with friends. Everyone joins with a name only—no game account is required.
 2. The room creator chooses **Crew vs AI** (one to ten players, with **Slow** or **Medium** monsters) or **Player duel** (two to ten players). Others may mark themselves ready; the creator can start whenever the chosen mode has enough players.
-3. In Crew vs AI, move close to a monster and attack. A Viking ally helps each successful strike. When a monster falls, reach the opened Rune Gate and interact to take the entire crew to the next realm. Revive a downed teammate by staying close for three seconds.
+3. In Crew vs AI, move close to a monster and fight. A Viking ally helps each successful strike. Watch the damage burst, monster and Viking health bars, and live points. When a monster falls, reach the opened Rune Gate and interact to take the entire crew to the next realm. Revive a downed teammate by staying close for three seconds.
 4. Clear the islands, waterfall sky islands, sea, underwater ruins, and finally the dragon's roost. Defeat Fjordwyrm to win. In Player duel, the last standing Viking wins instead.
-5. After victory or defeat, the room creator can return the same group to the lobby for a replay.
+5. After victory or defeat, compare the final leaderboard. Each point of damage earns 10 points; a final strike adds 80, and a successful revive adds 50. Monster strikes and damage points are shown too. Scores total across all five realms and reset at the start of a new round. The room creator can replay with the same group.
 
 For a quick solo demo, create a room, choose **Crew vs AI → Slow**, and start immediately. To verify multiplayer, open the invite on a second browser/device, enter a different name, then start from the creator's tab. Both views should show the same roster, position, health, stage, and result.
 
@@ -31,10 +31,12 @@ Players choose a name; there is no account or game login. A random room token st
 
 ## Controls
 
-- **WASD / arrow keys:** move. On a phone, use the directional pad.
-- **Space / Attack:** strike a nearby monster or duel opponent.
+- **WASD / arrow keys:** move. On a phone or desktop, use the visible directional pad.
+- **Space / Enter / F / Fight:** strike a nearby monster or duel opponent.
 - **R / Revive:** start reviving a downed teammate within range. Stay nearby for three seconds.
-- **E / Interact:** enter an open Rune Gate after defeating a realm's monster.
+- **E / Enter Gate:** enter an open Rune Gate after defeating a realm's monster.
+
+The arena shows the enemy health bar, monster strikes and score, each Viking's health and points, a personal combat HUD, and a damage burst for landed attacks from either side. The right-hand warband panel shows every player's current strikes, health, and score. After a round ends, the final leaderboard ranks all players by score and shows strikes, revives, total crew points, and the monsters' total damage points.
 
 The five encounters are Raven Shore (islands), Hanging Falls (waterfall sky islands), Whale Road (sea), Sunken Hall (underwater), and Dragon's Roost.
 
@@ -60,6 +62,6 @@ To deploy, provide a Cloudflare D1 binding named `DB` and apply the checked-in D
 
 ## Verification
 
-`pnpm test` exercises the actual API route with an in-memory SQLite D1 adapter: name-only joins, invalid/full rooms, ten players, host controls, movement sync, five stage gates, slow/medium AI, damage, down/revive/team wipe, PvP, and three replay cycles. `pnpm run typecheck` and `pnpm build` verify the client and Worker bundle. See [the manual device checklist](docs/TESTING.md) for checks that require separate browsers and phones.
+`pnpm test` exercises the actual API route with an in-memory SQLite D1 adapter: name-only joins, invalid/full rooms, ten players, host controls, movement sync, shared damage feedback and scores, five stage gates, slow/medium AI, down/revive/team wipe, PvP, and three replay cycles with clean scoring resets. `pnpm run typecheck` and `pnpm build` verify the client and Worker bundle. See [the manual device checklist](docs/TESTING.md) for checks that require separate browsers and phones.
 
 The source is public here for review. The hosted review build remains owner-private until its owner explicitly approves wider access and contest submission.

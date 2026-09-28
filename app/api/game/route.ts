@@ -6,9 +6,11 @@ type Room = {
   code: string; stage: number; hp: number; host_id: string; status: string; mode: string;
   difficulty: string; slots: number; enemy_x: number; enemy_y: number; last_tick_at: number;
   round: number; winner_id: string | null; event_seq: number; message: string;
+  last_hit_by: string | null; last_hit_target: string | null; last_hit_damage: number; last_hit_at: number;
+  enemy_strikes: number; enemy_score: number;
 };
 type Player = {
-  id: string; room_code: string; name: string; x: number; y: number; hp: number; strikes: number;
+  id: string; room_code: string; name: string; x: number; y: number; hp: number; strikes: number; score: number; revives: number;
   ready: number; direction: string; revive_target: string | null; revive_started_at: number; seen_at: number;
 };
 const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
@@ -18,7 +20,7 @@ function db() { if (!env.DB) throw new Error("Game storage unavailable"); return
 const randomCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6)), n => alphabet[n % alphabet.length]).join("");
 const newToken = () => crypto.randomUUID() + crypto.randomUUID();
 const roomByCode = (code: string) => db().prepare("SELECT * FROM rooms WHERE code = ?").bind(code).first<Room>();
-const playersIn = async (code: string) => (await db().prepare("SELECT id, room_code, name, x, y, hp, strikes, ready, direction, revive_target, revive_started_at, seen_at FROM players WHERE room_code = ? ORDER BY rowid").bind(code).all<Player>()).results;
+const playersIn = async (code: string) => (await db().prepare("SELECT id, room_code, name, x, y, hp, strikes, score, revives, ready, direction, revive_target, revive_started_at, seen_at FROM players WHERE room_code = ? ORDER BY rowid").bind(code).all<Player>()).results;
 const announce = (code: string, message: string) => db().prepare("UPDATE rooms SET event_seq = event_seq + 1, message = ? WHERE code = ?").bind(message, code).run();
 const active = (p: Player, now: number) => now - p.seen_at < 60000;
 
@@ -33,8 +35,10 @@ async function snapshot(code: string, selfId: string) {
     round: room.round, enemyX: room.enemy_x, enemyY: room.enemy_y,
     gateOpen: room.status === "running" && room.mode === "expedition" && room.hp === 0,
     winnerId: room.winner_id, eventSeq: room.event_seq, message: room.message, selfId,
+    lastHit: { by: room.last_hit_by, target: room.last_hit_target, damage: room.last_hit_damage, at: room.last_hit_at },
+    enemyStrikes: room.enemy_strikes, enemyScore: room.enemy_score,
     players: players.map(p => ({
-      id:p.id, name:p.name, x:p.x, y:p.y, hp:p.hp, strikes:p.strikes,
+      id:p.id, name:p.name, x:p.x, y:p.y, hp:p.hp, strikes:p.strikes, score:p.score, revives:p.revives,
       ready:!!p.ready, direction:p.direction, reviveTarget:p.revive_target,
       reviveStartedAt:p.revive_started_at, active:active(p, now),
     })),
@@ -52,7 +56,10 @@ async function tick(room: Room, now: number) {
     } else if (now - healer.revive_started_at >= 3000) {
       const healed = await db().prepare("UPDATE players SET hp = 5 WHERE id = ? AND room_code = ? AND hp = 0").bind(target.id,room.code).run();
       await db().prepare("UPDATE players SET revive_target = NULL, revive_started_at = 0 WHERE id = ?").bind(healer.id).run();
-      if (healed.meta.changes) await announce(room.code, `${target.name} was revived by ${healer.name}.`);
+      if (healed.meta.changes) {
+        await db().prepare("UPDATE players SET revives = revives + 1, score = score + 50 WHERE id = ?").bind(healer.id).run();
+        await announce(room.code, `${target.name} was revived by ${healer.name}. +50 points!`);
+      }
     }
   }
   if (room.hp <= 0) return;
@@ -72,7 +79,11 @@ async function tick(room: Room, now: number) {
   await db().prepare("UPDATE rooms SET enemy_x = ?, enemy_y = ? WHERE code = ? AND stage = ? AND status = 'running'").bind(x,y,room.code,room.stage).run();
   if (distance({x,y},target) > 13) return;
   const damage = room.difficulty === "medium" ? 2 : 1;
-  await db().prepare("UPDATE players SET hp = MAX(0, hp - ?) WHERE id = ? AND hp > 0").bind(damage,target.id).run();
+  const landed = await db().prepare("UPDATE players SET hp = MAX(0, hp - ?) WHERE id = ? AND hp > 0").bind(damage,target.id).run();
+  if (!landed.meta.changes) return;
+  const dealt = Math.min(damage,target.hp);
+  await db().prepare("UPDATE rooms SET enemy_strikes = enemy_strikes + 1, enemy_score = enemy_score + ?, last_hit_by = 'enemy', last_hit_target = ?, last_hit_damage = ?, last_hit_at = ? WHERE code = ? AND stage = ? AND status = 'running'")
+    .bind(dealt*10,target.id,dealt,now,room.code,room.stage).run();
   const remaining = await playersIn(room.code);
   if (remaining.find(p => p.id === target.id)?.hp === 0) await announce(room.code,`${target.name} is down. Get close and hold revive!`);
   if (remaining.filter(p => active(p,now)).every(p => p.hp === 0)) {
@@ -111,7 +122,7 @@ async function enter(body: Record<string,unknown>) {
   }
   try {
     const count = await db().prepare("SELECT COUNT(*) AS n FROM players WHERE room_code = ?").bind(code).first<{n:number}>();
-    await db().prepare("INSERT INTO players (id,room_code,token,name,x,y,hp,strikes,ready,direction,revive_target,revive_started_at,last_attack_at,last_move_at,seen_at) VALUES (?,?,?,?,18,?,10,0,0,'right',NULL,0,0,0,?)")
+    await db().prepare("INSERT INTO players (id,room_code,token,name,x,y,hp,strikes,score,revives,ready,direction,revive_target,revive_started_at,last_attack_at,last_move_at,seen_at) VALUES (?,?,?,?,18,?,10,0,0,0,0,'right',NULL,0,0,0,?)")
       .bind(id,code,token,name,25+((count?.n??0)%10)*6,now).run();
   } catch (error) {
     await db().prepare("UPDATE rooms SET slots = MAX(0,slots-1) WHERE code = ?").bind(code).run();
@@ -160,9 +171,9 @@ async function command(body: Record<string,unknown>) {
     if (room.status === "running") return fail("The hunt is already running.",409);
     const roster = await playersIn(code);
     if (room.mode === "duel" && roster.filter(p => active(p,now)).length < 2) return fail("A duel needs at least two players.",409,"NEED_OPPONENT");
-    await db().prepare("UPDATE rooms SET stage = 0, hp = ?, status = 'running', enemy_x = ?, enemy_y = ?, last_tick_at = ?, round = round + 1, winner_id = NULL, event_seq = event_seq + 1, message = ?, updated_at = ? WHERE code = ?")
+    await db().prepare("UPDATE rooms SET stage = 0, hp = ?, status = 'running', enemy_x = ?, enemy_y = ?, last_tick_at = ?, round = round + 1, winner_id = NULL, last_hit_by = NULL, last_hit_target = NULL, last_hit_damage = 0, last_hit_at = 0, enemy_strikes = 0, enemy_score = 0, event_seq = event_seq + 1, message = ?, updated_at = ? WHERE code = ?")
       .bind(STAGES[0].hp,MONSTER.x,MONSTER.y,now,room.mode === "duel" ? "The duel begins!" : "The crew lands on Raven Shore.",now,code).run();
-    await db().prepare("UPDATE players SET x = 18, y = 20 + ((rowid - 1) % 10) * 6, hp = 10, strikes = 0, ready = 0, direction = 'right', revive_target = NULL, revive_started_at = 0, last_attack_at = 0, last_move_at = 0 WHERE room_code = ?").bind(code).run();
+    await db().prepare("UPDATE players SET x = 18, y = 20 + ((rowid - 1) % 10) * 6, hp = 10, strikes = 0, score = 0, revives = 0, ready = 0, direction = 'right', revive_target = NULL, revive_started_at = 0, last_attack_at = 0, last_move_at = 0 WHERE room_code = ?").bind(code).run();
     return snapshot(code,player.id);
   }
   await tick(room,now);
@@ -208,8 +219,11 @@ async function command(body: Record<string,unknown>) {
       if (!rivals.length) return fail("Move closer to an opponent.",409,"OUT_OF_RANGE");
       rivals.sort((a,b) => distance(a,player!)-distance(b,player!));
       const target=rivals[0];
-      await db().prepare("UPDATE players SET hp = MAX(0,hp-3) WHERE id = ? AND hp > 0").bind(target.id).run();
-      await db().prepare("UPDATE players SET strikes = strikes + 1 WHERE id = ?").bind(player.id).run();
+      const damage = Math.min(3,target.hp);
+      const landed = await db().prepare("UPDATE players SET hp = MAX(0,hp-3) WHERE id = ? AND hp > 0").bind(target.id).run();
+      if (!landed.meta.changes) return snapshot(code,player.id);
+      await db().prepare("UPDATE players SET strikes = strikes + 1, score = score + ? WHERE id = ?").bind(damage*10+(target.hp<=3?80:0),player.id).run();
+      await db().prepare("UPDATE rooms SET last_hit_by = ?, last_hit_target = ?, last_hit_damage = ?, last_hit_at = ? WHERE code = ?").bind(player.id,target.id,damage,now,code).run();
       const alive=(await playersIn(code)).filter(p => p.hp>0 && active(p,now));
       if (alive.length===1) await db().prepare("UPDATE rooms SET status = 'victory', winner_id = ?, event_seq = event_seq + 1, message = ? WHERE code = ? AND status = 'running'")
         .bind(alive[0].id,`${alive[0].name} wins the duel!`,code).run();
@@ -221,7 +235,9 @@ async function command(body: Record<string,unknown>) {
     const hit=await db().prepare("UPDATE rooms SET hp = MAX(0,hp-4), updated_at = ? WHERE code = ? AND stage = ? AND status = 'running' AND hp > 0")
       .bind(now,code,room.stage).run();
     if (!hit.meta.changes) return snapshot(code,player.id);
-    await db().prepare("UPDATE players SET strikes = strikes + 1 WHERE id = ?").bind(player.id).run();
+    const damage = Math.min(4,room.hp);
+    await db().prepare("UPDATE players SET strikes = strikes + 1, score = score + ? WHERE id = ?").bind(damage*10+(room.hp<=4?80:0),player.id).run();
+    await db().prepare("UPDATE rooms SET last_hit_by = ?, last_hit_target = 'enemy', last_hit_damage = ?, last_hit_at = ? WHERE code = ?").bind(player.id,damage,now,code).run();
     const after=await roomByCode(code);
     if (after?.hp===0) {
       if (room.stage===STAGES.length-1) await db().prepare("UPDATE rooms SET status = 'victory', event_seq = event_seq + 1, message = 'Fjordwyrm defeated. The fjord is free!' WHERE code = ? AND stage = ? AND hp = 0 AND status = 'running'").bind(code,room.stage).run();

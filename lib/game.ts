@@ -22,7 +22,10 @@ export type GameState = {
   winnerId: string | null;
   eventSeq: number;
   message: string;
-  players: { id: string; name: string; x: number; y: number; hp: number; strikes: number; ready: boolean; direction: string; reviveTarget: string | null; reviveStartedAt: number; active: boolean }[];
+  lastHit: { by: string | null; target: string | null; damage: number; at: number };
+  enemyStrikes: number;
+  enemyScore: number;
+  players: { id: string; name: string; x: number; y: number; hp: number; strikes: number; score: number; revives: number; ready: boolean; direction: string; reviveTarget: string | null; reviveStartedAt: number; active: boolean }[];
   selfId: string;
 };
 

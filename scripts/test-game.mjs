@@ -7,8 +7,9 @@ import { dirname, resolve } from "node:path";
 // Run the actual route against an in-memory SQLite implementation of D1's
 // prepared-statement API. No deployed user room is touched.
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const STAGES_HP = [12,18,24,22,42];
 const sqlite = new DatabaseSync(":memory:");
-for (const name of ["0000_smart_gwen_stacy.sql", "0001_amused_spiral.sql", "0002_mighty_old_lace.sql"]) {
+for (const name of ["0000_smart_gwen_stacy.sql", "0001_amused_spiral.sql", "0002_mighty_old_lace.sql", "0003_kind_toro.sql", "0004_gigantic_bloodscream.sql"]) {
   for (const statement of readFileSync(resolve(root, "drizzle", name), "utf8").split("--> statement-breakpoint")) if (statement.trim()) sqlite.exec(statement);
 }
 globalThis.__fjordfallTestDb = {
@@ -69,6 +70,7 @@ try {
   for(let stage=0;stage<5;stage++){
     await move(host,1,0,5); await move(host,0,1,3);
     let current=await state(host), safety=0;
+    const startingScore=current.players.find(p=>p.id===host.id).score;
     while(current.hp>0&&current.status==="running"&&safety++<20){
       advance(600);const response=await call({type:"attack",...host});
       assert.equal(response.status,200,JSON.stringify(response.body));
@@ -76,6 +78,9 @@ try {
     }
     assert.equal(current.hp,0,`stage ${stage} enemy defeated`);
     assert.equal((await state(mate)).hp,0,"shared enemy health");
+    assert.equal(current.players.find(p=>p.id===host.id).score-startingScore,STAGES_HP[stage]*10+80,`stage ${stage} scoring includes damage and final strike`);
+    assert.deepEqual((await state(mate)).lastHit,current.lastHit,"damage feedback shared across players");
+    assert.equal(current.lastHit.target,"enemy");
     if(stage<4){
       assert.equal(current.gateOpen,true);
       await move(host,1,0,5);
@@ -86,8 +91,10 @@ try {
     } else assert.equal(current.status,"victory");
   }
   assert.equal((await state(mate)).status,"victory");
+  assert.equal((await state(mate)).players.find(p=>p.id===host.id).score,STAGES_HP.reduce((a,b)=>a+b,0)*10+5*80,"final leaderboard total survives realm changes");
   assert.equal((await call({type:"start",...host})).body.round,2);
   assert.equal((await state(host)).players.length,2);
+  assert.ok((await state(host)).players.every(p=>p.score===0&&p.revives===0),"new round resets the leaderboard");
 
   // Host can switch to PvP. Three same-room replays reset every player.
   await call({type:"leave",...mate});
@@ -102,11 +109,13 @@ try {
     const started=await call({type:"start",...duelHost});
     assert.equal(started.body.round,round);
     assert.equal(started.body.players.length,2);
-    assert.ok(started.body.players.every(p=>p.hp===10&&p.strikes===0));
+    assert.ok(started.body.players.every(p=>p.hp===10&&p.strikes===0&&p.score===0));
     let result=started.body;
     for(let hit=0;hit<4;hit++){advance(600);const attack=await call({type:"attack",...duelHost});assert.equal(attack.status,200,JSON.stringify(attack.body));result=attack.body;}
     assert.equal(result.status,"victory");
     assert.equal(result.winnerId,duelHost.id);
+    assert.equal(result.players.find(p=>p.id===duelHost.id).score,180,"duel points use actual damage plus final blow");
+    assert.equal(result.lastHit.target,duelRival.id,"duel damage target shared");
     assert.equal((await state(duelRival)).status,"victory");
   }
   const solo=await create("Solo");
@@ -128,8 +137,11 @@ try {
   advance(900);
   const medium=await state(ai);
   assert.ok(medium.enemyX<72 || medium.enemyY<50,"medium AI moves on server tick");
-  advance(900); await state(ai);
-  assert.ok((await state(ai)).players[0].hp<=hpBefore,"AI owns player damage");
+  let aiState=medium;
+  for(let i=0;i<10&&aiState.enemyStrikes===0;i++){advance(900);aiState=await state(ai);}
+  assert.ok(aiState.players[0].hp<=hpBefore,"AI owns player damage");
+  assert.ok(aiState.enemyStrikes>0&&aiState.enemyScore>0,"enemy strikes and score are canonical");
+  assert.equal(aiState.lastHit.by,"enemy","enemy hit feedback is shared");
 
   // Down, revive after three seconds, team wipe, then clean replay.
   const rescueHost=await create("Healer");
@@ -145,6 +157,8 @@ try {
   advance(3001);
   const restored=await state(rescueHost);
   assert.ok(restored.players.find(p=>p.id===victim.id).hp>0,"three-second teammate revive");
+  assert.equal(restored.players.find(p=>p.id===rescueHost.id).score,50,"revival points and leaderboard update");
+  assert.equal(restored.players.find(p=>p.id===rescueHost.id).revives,1);
   const wipe=await create("Wipe");
   await call({type:"start",...wipe});
   for(let i=0;i<80;i++){advance(1600);if((await state(wipe)).status==="defeat")break;}
@@ -154,7 +168,9 @@ try {
   assert.equal(replay.body.players.length,1);
   assert.equal(replay.body.players[0].hp,10);
   assert.equal(replay.body.stage,0);
-  console.log("PASS: name-only join, 10-player cap, host modes/start, shared movement, five hunts/gates, AI speeds, down/revive/wipe, PvP and three replay cycles");
+  assert.equal(replay.body.enemyScore,0);
+  assert.equal(replay.body.enemyStrikes,0);
+  console.log("PASS: name-only join, 10-player cap, shared combat feedback/scoring, five hunts/gates, AI speeds, revive/defeat, PvP and three replay cycles");
 } finally {
   Date.now=realNow;
   unlinkSync(temp);

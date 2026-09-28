@@ -22,6 +22,20 @@
       "when": 1790618396269,
       "tag": "0002_mighty_old_lace",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1790631449528,
+      "tag": "0003_kind_toro",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1790631727903,
+      "tag": "0004_gigantic_bloodscream",
+      "breakpoints": true
     }
   ]
 }
