@@ -13,7 +13,7 @@ export type GameState = {
   maxHp: number;
   status: "lobby" | "running" | "victory" | "defeat";
   mode: "expedition" | "duel";
-  difficulty: "slow" | "medium";
+  difficulty: "slow" | "medium" | "hard";
   hostId: string;
   round: number;
   enemyX: number;
@@ -30,6 +30,11 @@ export type GameState = {
 };
 
 export const MAX_PLAYERS = 10;
+export const AI_SETTINGS = {
+  slow: { interval: 1600, step: 3, damage: 1 },
+  medium: { interval: 800, step: 5, damage: 2 },
+  hard: { interval: 550, step: 7, damage: 3 },
+} as const;
 export const MONSTER = { x: 72, y: 50 };
 export const GATE = { x: 88, y: 50 };
 export const distance = (a: {x:number;y:number}, b: {x:number;y:number}) => Math.hypot(a.x-b.x,a.y-b.y);
