@@ -143,6 +143,17 @@ try {
   assert.ok(aiState.enemyStrikes>0&&aiState.enemyScore>0,"enemy strikes and score are canonical");
   assert.equal(aiState.lastHit.by,"enemy","enemy hit feedback is shared");
 
+  const hardHost=await create("Hard Target");
+  assert.equal((await call({type:"config",...hardHost,mode:"expedition",difficulty:"hard"})).body.difficulty,"hard");
+  assert.equal((await call({type:"config",...hardHost,mode:"expedition",difficulty:"extreme"})).status,400);
+  await call({type:"start",...hardHost});
+  advance(600);
+  let hardState=await state(hardHost);
+  assert.ok(hardState.enemyX<72 || hardState.enemyY<50,"hard AI reacts in under 800 ms");
+  for(let i=0;i<15&&hardState.enemyStrikes===0;i++){advance(600);hardState=await state(hardHost);}
+  assert.ok(hardState.enemyStrikes>0,"hard AI closes the distance");
+  assert.equal(hardState.lastHit.damage,3,"hard AI deals three damage per strike");
+
   // Down, revive after three seconds, team wipe, then clean replay.
   const rescueHost=await create("Healer");
   const victim=await join(rescueHost.code,"Victim");

@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { cleanCode, cleanName, distance, GATE, MAX_PLAYERS, MONSTER, STAGES } from "@/lib/game";
+import { AI_SETTINGS, cleanCode, cleanName, distance, GATE, MAX_PLAYERS, MONSTER, STAGES } from "@/lib/game";
 
 export const runtime = "edge";
 type Room = {
@@ -63,7 +63,8 @@ async function tick(room: Room, now: number) {
     }
   }
   if (room.hp <= 0) return;
-  const interval = room.difficulty === "medium" ? 800 : 1600;
+  const settings = AI_SETTINGS[room.difficulty as keyof typeof AI_SETTINGS] ?? AI_SETTINGS.slow;
+  const interval = settings.interval;
   const claimed = await db().prepare("UPDATE rooms SET last_tick_at = ? WHERE code = ? AND status = 'running' AND stage = ? AND hp > 0 AND last_tick_at <= ?")
     .bind(now,room.code,room.stage,now-interval).run();
   if (!claimed.meta.changes) return;
@@ -73,12 +74,12 @@ async function tick(room: Room, now: number) {
   living.sort((a,b) => distance(a,enemy)-distance(b,enemy));
   const target = living[0];
   const gap = distance(target,enemy);
-  const step = room.difficulty === "medium" ? 5 : 3;
+  const step = settings.step;
   const x = Math.max(8,Math.min(92,Math.round(enemy.x+(target.x-enemy.x)*Math.min(1,step/Math.max(gap,1)))));
   const y = Math.max(10,Math.min(90,Math.round(enemy.y+(target.y-enemy.y)*Math.min(1,step/Math.max(gap,1)))));
   await db().prepare("UPDATE rooms SET enemy_x = ?, enemy_y = ? WHERE code = ? AND stage = ? AND status = 'running'").bind(x,y,room.code,room.stage).run();
   if (distance({x,y},target) > 13) return;
-  const damage = room.difficulty === "medium" ? 2 : 1;
+  const damage = settings.damage;
   const landed = await db().prepare("UPDATE players SET hp = MAX(0, hp - ?) WHERE id = ? AND hp > 0").bind(damage,target.id).run();
   if (!landed.meta.changes) return;
   const dealt = Math.min(damage,target.hp);
@@ -161,7 +162,7 @@ async function command(body: Record<string,unknown>) {
   if (body.type === "config") {
     if (room.host_id !== player.id || room.status === "running") return fail("Only the room creator can configure the next hunt.",403);
     const mode = body.mode === "duel" ? "duel" : body.mode === "expedition" ? "expedition" : null;
-    const difficulty = body.difficulty === "medium" ? "medium" : body.difficulty === "slow" ? "slow" : null;
+    const difficulty = body.difficulty === "hard" ? "hard" : body.difficulty === "medium" ? "medium" : body.difficulty === "slow" ? "slow" : null;
     if (!mode || !difficulty) return fail("Choose a valid mode and AI speed.",400);
     await db().prepare("UPDATE rooms SET mode = ?, difficulty = ? WHERE code = ?").bind(mode,difficulty,code).run();
     return snapshot(code,player.id);
