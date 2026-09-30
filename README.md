@@ -7,7 +7,7 @@
 **Gather your warband. Hunt across five realms. Face the dragon.**
 
 [![Build and game flow](https://github.com/h00w/fjordfall/actions/workflows/ci.yml/badge.svg)](https://github.com/h00w/fjordfall/actions/workflows/ci.yml)
-[![Demo owner private](https://img.shields.io/badge/Playable%20demo-owner--private-C39259?style=flat-square)](https://fjordfall-uniplay.hendar2-0.chatgpt.site)
+[![Public demo](https://img.shields.io/badge/Playable%20demo-public-527D56?style=flat-square)](https://fjordfall-uniplay.hendar2-0.chatgpt.site)
 [![Players 1 to 10](https://img.shields.io/badge/Players-1%E2%80%9310-287C85?style=flat-square)](#play-modes)
 [![No game account](https://img.shields.io/badge/Game%20account-not%20required-527D56?style=flat-square)](#how-to-play)
 
@@ -20,9 +20,9 @@
 
 A name-only multiplayer Viking arena for 1–10 people. Create a six-character room, share its invite URL, and let the room creator start whenever they wish.
 
-## Private playable demo
+## Public playable demo
 
-**[Open Fjordfall's owner-private review build](https://fjordfall-uniplay.hendar2-0.chatgpt.site)**. This review deployment requires the project owner's access; it has not been made publicly playable or submitted to the contest. The source and cover art are in this repository so the game can also be run locally.
+**[Play Fjordfall in your browser](https://fjordfall-uniplay.hendar2-0.chatgpt.site)**. The public deployment is available without a game account. The source and cover art are in this repository so the game can also be run locally.
 
 ### How to play
 
@@ -80,4 +80,4 @@ To deploy, provide a Cloudflare D1 binding named `DB` and apply the checked-in D
 
 `pnpm test` exercises the actual API route with an in-memory SQLite D1 adapter: name-only joins, invalid/full rooms, ten players, host controls, movement sync, shared damage feedback and scores, five stage gates, slow/medium/hard AI, down/revive/team wipe, PvP, and three replay cycles with clean scoring resets. `pnpm run typecheck` and `pnpm build` verify the client and Worker bundle. See [the manual device checklist](docs/TESTING.md) for checks that require separate browsers and phones.
 
-The source is public here for review. The hosted review build remains owner-private until its owner explicitly approves wider access and contest submission.
+The source and playable deployment are public. A room still requires a Viking name, and the host controls when each round starts.
