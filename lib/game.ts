@@ -39,6 +39,14 @@ export function stageMonsterHp(stage: number, difficulty: GameState["difficulty"
   const base = STAGES[stage]?.hp ?? 0;
   return difficulty === "hard" ? Math.ceil(base * 1.5) : base;
 }
+export const playerMaxHp = (stage: number, mode: GameState["mode"] = "expedition") =>
+  10 + (mode === "expedition" ? stage : 0);
+
+export function monsterStrike(difficulty: GameState["difficulty"], stage: number, roll: number) {
+  const base = AI_SETTINGS[difficulty].damage + stage;
+  if (roll < 0 || roll >= 1 || !Number.isFinite(roll)) throw new RangeError("critical roll must be in [0, 1)");
+  return { damage: base + (roll < 0.1 ? 2 : roll < 0.2 ? 3 : 0), critical: roll < 0.2 };
+}
 export const MONSTER = { x: 72, y: 50 };
 export const GATE = { x: 88, y: 50 };
 export const distance = (a: {x:number;y:number}, b: {x:number;y:number}) => Math.hypot(a.x-b.x,a.y-b.y);

@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { AI_SETTINGS, cleanCode, cleanName, distance, GATE, MAX_PLAYERS, MONSTER, stageMonsterHp, STAGES } from "@/lib/game";
+import { AI_SETTINGS, cleanCode, cleanName, distance, GATE, MAX_PLAYERS, MONSTER, monsterStrike, playerMaxHp, stageMonsterHp, STAGES } from "@/lib/game";
 
 export const runtime = "edge";
 type Room = {
@@ -79,7 +79,7 @@ async function tick(room: Room, now: number) {
   const y = Math.max(10,Math.min(90,Math.round(enemy.y+(target.y-enemy.y)*Math.min(1,step/Math.max(gap,1)))));
   await db().prepare("UPDATE rooms SET enemy_x = ?, enemy_y = ? WHERE code = ? AND stage = ? AND status = 'running'").bind(x,y,room.code,room.stage).run();
   if (distance({x,y},target) > 13) return;
-  const damage = settings.damage;
+  const damage = monsterStrike(room.difficulty as "slow" | "medium" | "hard", room.stage, crypto.getRandomValues(new Uint32Array(1))[0] / 2 ** 32).damage;
   const landed = await db().prepare("UPDATE players SET hp = MAX(0, hp - ?) WHERE id = ? AND hp > 0").bind(damage,target.id).run();
   if (!landed.meta.changes) return;
   const dealt = Math.min(damage,target.hp);
@@ -207,8 +207,8 @@ async function command(body: Record<string,unknown>) {
     if (distance(player,GATE)>18) return fail("Move closer to the Rune Gate.",409);
     const next=room.stage+1;
     const changed = await db().prepare("UPDATE rooms SET stage = ?, hp = ?, enemy_x = 72, enemy_y = 50, last_tick_at = ?, updated_at = ?, event_seq = event_seq + 1, message = ? WHERE code = ? AND stage = ? AND hp = 0 AND status = 'running'")
-      .bind(next,stageMonsterHp(next,room.difficulty as "slow" | "medium" | "hard"),now,now,`The crew enters ${STAGES[next].realm}.`,code,room.stage).run();
-    if (changed.meta.changes) await db().prepare("UPDATE players SET x = 18, y = 20 + ((rowid - 1) % 10) * 6, hp = 10, revive_target = NULL, revive_started_at = 0 WHERE room_code = ?").bind(code).run();
+      .bind(next,stageMonsterHp(next,room.difficulty as "slow" | "medium" | "hard"),now,now,`Level up! The crew enters ${STAGES[next].realm}. Max HP ${playerMaxHp(next)}.`,code,room.stage).run();
+    if (changed.meta.changes) await db().prepare("UPDATE players SET x = 18, y = 20 + ((rowid - 1) % 10) * 6, hp = ?, revive_target = NULL, revive_started_at = 0 WHERE room_code = ?").bind(playerMaxHp(next),code).run();
     return snapshot(code,player.id);
   }
   if (body.type === "attack") {
