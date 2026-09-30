@@ -3,6 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import { readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
+import { stageMonsterHp } from "../lib/game.ts";
 
 // Run the actual route against an in-memory SQLite implementation of D1's
 // prepared-statement API. No deployed user room is touched.
@@ -144,9 +145,13 @@ try {
   assert.equal(aiState.lastHit.by,"enemy","enemy hit feedback is shared");
 
   const hardHost=await create("Hard Target");
+  assert.deepEqual(STAGES_HP.map((_,stage)=>stageMonsterHp(stage,"hard")),[18,27,36,33,63],"hard scales every realm");
+  assert.equal(stageMonsterHp(0,"medium"),12,"medium health is unchanged");
   assert.equal((await call({type:"config",...hardHost,mode:"expedition",difficulty:"hard"})).body.difficulty,"hard");
   assert.equal((await call({type:"config",...hardHost,mode:"expedition",difficulty:"extreme"})).status,400);
-  await call({type:"start",...hardHost});
+  const hardStarted=await call({type:"start",...hardHost});
+  assert.equal(hardStarted.body.hp,18,"hard monster has more health");
+  assert.equal(hardStarted.body.maxHp,18,"hard health bar reflects server health");
   advance(600);
   let hardState=await state(hardHost);
   assert.ok(hardState.enemyX<72 || hardState.enemyY<50,"hard AI reacts in under 800 ms");
