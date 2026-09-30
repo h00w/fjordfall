@@ -147,7 +147,7 @@ export default function Home() {
   const impact = game?.status === "running" && game.lastHit && clock-game.lastHit.at < 1450 && clock-game.lastHit.at >= 0 ? game.lastHit : null;
   const impactTarget = impact?.target === "enemy" ? {x:game!.enemyX,y:game!.enemyY} : game?.players.find(p=>p.id===impact?.target);
   return <main className="app-shell">
-    <header className="topbar"><div className="brand"><span className="brand-mark">ᚠ</span><span>FJORDFALL</span><small>THE FIVE HUNTS</small></div>
+    <header className="topbar"><div className="brand"><span className="brand-mark">ᚠ</span><span>FJORDFALL</span><small>THE DRAGON HUNT</small></div>
       <div className="top-actions">{game && <div className="room-pill"><span>ROOM</span><strong>{game.code}</strong><button aria-label="Copy invite link" onClick={copyInvite}>{copied ? <Check size={16}/> : <Copy size={16}/>}</button></div>}
         <button className="icon-button" title={sound ? "Mute sound" : "Enable sound"} aria-label={sound ? "Mute sound" : "Enable sound"} aria-pressed={sound} onClick={() => setSound(!sound)}><Volume2 size={18} className={sound ? "" : "muted"}/></button></div>
     </header>
