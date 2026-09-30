@@ -35,6 +35,10 @@ export const AI_SETTINGS = {
   medium: { interval: 800, step: 5, damage: 2 },
   hard: { interval: 550, step: 7, damage: 3 },
 } as const;
+export function stageMonsterHp(stage: number, difficulty: GameState["difficulty"]) {
+  const base = STAGES[stage]?.hp ?? 0;
+  return difficulty === "hard" ? Math.ceil(base * 1.5) : base;
+}
 export const MONSTER = { x: 72, y: 50 };
 export const GATE = { x: 88, y: 50 };
 export const distance = (a: {x:number;y:number}, b: {x:number;y:number}) => Math.hypot(a.x-b.x,a.y-b.y);
