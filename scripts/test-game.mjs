@@ -56,7 +56,7 @@ try {
   };
   const host=await create("Astrid");
   for (let stage=0;stage<5;stage++) {
-    assert.equal(playerMaxHp(stage),10+stage);
+    assert.equal(playerMaxHp(stage),10+stage*2);
     assert.equal(playerMaxHp(stage,"duel"),10);
     assert.deepEqual(monsterStrike("hard",stage,0.5),{damage:3+stage,critical:false});
     assert.deepEqual(monsterStrike("hard",stage,0.05),{damage:5+stage,critical:true});
@@ -89,14 +89,15 @@ try {
     assert.equal(current.players.find(p=>p.id===host.id).score-startingScore,STAGES_HP[stage]*10+80,`stage ${stage} scoring includes damage and final strike`);
     assert.deepEqual((await state(mate)).lastHit,current.lastHit,"damage feedback shared across players");
     assert.equal(current.lastHit.target,"enemy");
+    assert.match(current.message,/LEVEL UP!/);
+    assert.match(current.message,/\+2 HP/);
     if(stage<4){
       assert.equal(current.gateOpen,true);
       await move(host,1,0,5);
       const gate=await call({type:"interact",...host});
       assert.equal(gate.status,200,JSON.stringify(gate.body));
       assert.equal(gate.body.stage,stage+1);
-      assert.match(gate.body.message,/Level up!/);
-      assert.ok(gate.body.players.every(p=>p.hp===11+stage),"all crew gain one max HP at each gate");
+      assert.ok(gate.body.players.every(p=>p.hp===12+stage*2),"all crew retain the +2 HP level reward at each gate");
       assert.equal((await state(mate)).stage,stage+1);
     } else assert.equal(current.status,"victory");
   }
