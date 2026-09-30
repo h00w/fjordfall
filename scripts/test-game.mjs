@@ -55,6 +55,15 @@ try {
     for(let i=0;i<n;i++){advance(100);const r=await call({type:"move",...player,dx,dy});assert.equal(r.status,200,JSON.stringify(r.body));}
   };
   const host=await create("Astrid");
+  // Regression: critical boundaries preserve the 20% chance and realm scaling.
+  for (const [difficulty,base] of [["slow",1],["medium",2],["hard",3]]) {
+    for (const stage of [0,4]) {
+      for (const [roll,bonus,critical] of [[0,2,true],[0.099999,2,true],[0.1,3,true],[0.199999,3,true],[0.2,0,false],[0.999999,0,false]]) {
+        assert.deepEqual(monsterStrike(difficulty,stage,roll),{damage:base+stage+bonus,critical},`${difficulty} realm ${stage} roll ${roll}`);
+      }
+    }
+  }
+  for (const roll of [-0.01,1,NaN,Infinity]) assert.throws(()=>monsterStrike("slow",0,roll),RangeError);
   for (let stage=0;stage<5;stage++) {
     assert.equal(playerMaxHp(stage),10+stage);
     assert.equal(playerMaxHp(stage,"duel"),10);

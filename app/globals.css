@@ -29,6 +29,9 @@
 @media(prefers-reduced-motion:reduce){.impact-burst{animation:none;opacity:1}}
 
 
+/* The supplied cover includes its title; show the complete artwork without extra text. */
+.cover{background-size:contain;background-color:#06141d}
+
 /* Full-screen desktop presentation: keep the complete battle surface in one viewport. */
 @media (min-width:761px){
   html,body{height:100%;overflow:hidden}
