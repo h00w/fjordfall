@@ -139,7 +139,8 @@ export default function Home() {
     sessionStorage.removeItem("fjordfall-session"); history.replaceState(null, "", "/"); setSession(null); setGame(null); setCode("");
   }
   const stage = game ? STAGES[Math.min(game.stage, STAGES.length - 1)] : STAGES[0];
-  const maxPlayerHp = game ? playerMaxHp(game.stage, game.mode) : 10;
+  const playerLevel = game?.mode === "expedition" ? game.stage + (game.hp === 0 ? 2 : 1) : 1;
+  const maxPlayerHp = game ? playerMaxHp(playerLevel - 1, game.mode) : 10;
   const won = game?.status === "victory";
   const self = game?.players.find(p => p.id === game.selfId);
   const isHost = !!game && game.selfId === game.hostId;
@@ -173,7 +174,7 @@ export default function Home() {
         <button className="leave-link" onClick={exitRoom}>Leave room</button>
       </div>
     </section> : <div className="game-layout"><section className="play-column">
-      <div className="chapter-line"><div><p className="eyebrow">{game.mode==="duel"?"PLAYER DUEL":`LEVEL ${game.stage+1} / 5`} <span className="chapter-sep">◆</span> {stage.map} · {game.mode==="expedition"?`AI ${game.difficulty.toUpperCase()}`:"PVP"}</p><h1>{won ? (game.mode==="duel"?"The duel is won":"The fjord is free") : game.status==="defeat"?"The crew has fallen":game.mode==="duel"?"Last Viking standing":stage.realm}</h1><p>{game.status==="running" ? game.mode==="duel"?"Strike opponents at close range. The last survivor wins.":game.gateOpen?"The Rune Gate is open. Reach it and press Interact.":game.stage>0?`LEVEL UP · Max HP ${maxPlayerHp} (+1) · ${stage.lore}`:stage.lore : game.message}</p></div><span className="stage-count">{game.mode==="duel"?"⚔":String(game.stage+1).padStart(2,"0")} <small>{game.mode==="duel"?"PVP":"/ 05"}</small></span></div>
+      <div className="chapter-line"><div><p className="eyebrow">{game.mode==="duel"?"PLAYER DUEL":`LEVEL ${playerLevel} · REALM ${game.stage+1} / 5`} <span className="chapter-sep">◆</span> {stage.map} · {game.mode==="expedition"?`AI ${game.difficulty.toUpperCase()}`:"PVP"}</p><h1>{won ? (game.mode==="duel"?"The duel is won":"The fjord is free") : game.status==="defeat"?"The crew has fallen":game.mode==="duel"?"Last Viking standing":stage.realm}</h1><p>{game.status==="running" ? game.mode==="duel"?"Strike opponents at close range. The last survivor wins.":game.gateOpen?"The Rune Gate is open. Reach it and press Interact.":game.stage>0?`LEVEL ${playerLevel} · Max HP ${maxPlayerHp} (+2) · ${stage.lore}`:stage.lore : game.message}</p></div><span className="stage-count">{game.mode==="duel"?"⚔":String(game.stage+1).padStart(2,"0")} <small>{game.mode==="duel"?"PVP":"/ 05"}</small></span></div>
       <div className={`arena ${maps[Math.min(game.stage, 4)]}`} role="group" aria-label={`${stage.realm} battle arena`}>
         <div className="terrain terrain-a"/><div className="terrain terrain-b"/><div className="terrain terrain-c"/><div className="map-rune rune-a">ᚦ</div><div className="map-rune rune-b">ᚠ</div>
         <div className="combat-hud"><div className="hud-label"><Heart size={15}/> {self?.name ?? "VIKING"} <b>{self?.hp ?? 0}/{maxPlayerHp} HP</b></div><div className="hud-track"><span style={{width:`${(self?.hp??0)/maxPlayerHp*100}%`}}/></div><div className="hud-points"><Zap size={14}/> {self?.score ?? 0} POINTS <span>· {self?.strikes ?? 0} STRIKES</span></div></div>
