@@ -27,7 +27,7 @@ A name-only multiplayer Viking arena for 1–10 people. Create a six-character r
 ### How to play
 
 1. Type a Viking name and create a room. Share the six-letter code or the invite link with friends. Everyone joins with a name only—no game account is required.
-2. The room creator chooses **Crew vs AI** (one to ten players, with **Slow** or **Medium** monsters) or **Player duel** (two to ten players). Others may mark themselves ready; the creator can start whenever the chosen mode has enough players.
+2. The room creator chooses **Crew vs AI** (one to ten players, with **Slow**, **Medium**, or **Hard** monsters) or **Player duel** (two to ten players). Others may mark themselves ready; the creator can start whenever the chosen mode has enough players.
 3. In Crew vs AI, move close to a monster and fight. A Viking ally helps each successful strike. Watch the damage burst, monster and Viking health bars, and live points. When a monster falls, reach the opened Rune Gate and interact to take the entire crew to the next realm. Revive a downed teammate by staying close for three seconds.
 4. Clear the islands, waterfall sky islands, sea, underwater ruins, and finally the dragon's roost. Defeat Fjordwyrm to win. In Player duel, the last standing Viking wins instead.
 5. After victory or defeat, compare the final leaderboard. Each point of damage earns 10 points; a final strike adds 80, and a successful revive adds 50. Monster strikes and damage points are shown too. Scores total across all five realms and reset at the start of a new round. The room creator can replay with the same group.
@@ -41,7 +41,7 @@ For a quick solo demo, create a room, choose **Crew vs AI → Slow**, and start 
 | Crew vs AI | 1–10 | Defeat the server-controlled monster in each realm, activate the Rune Gate, and defeat Fjordwyrm. Viking allies add damage to each landed strike. |
 | Player duel | 2–10 | Fight other players. The last Viking standing wins. |
 
-The creator selects **Slow** or **Medium** AI in crew mode. Slow enemies move and strike every 1.6 seconds; Medium enemies act every 0.8 seconds, move farther, and do more damage. Ready indicators help coordinate the lobby, but they do not prevent the creator from starting. The same room code works for replays.
+The creator selects **Slow**, **Medium**, or **Hard** AI in crew mode. Slow enemies move and strike every 1.6 seconds; Medium enemies act every 0.8 seconds and hit harder. Hard enemies act every 0.55 seconds, pursue farther, deal three damage per hit, and have 50% more health in every realm. Ready indicators help coordinate the lobby, but they do not prevent the creator from starting. The same room code works for replays.
 
 Players choose a name; there is no account or game login. A random room token stays in the browser tab's session storage, so refreshing retains that player's identity. Room state, movement, damage, cooldowns, enemy AI, revival, stage progression, victory, and replay are validated on the server and stored in D1. Clients poll canonical snapshots every 700 ms.
 
@@ -78,6 +78,6 @@ To deploy, provide a Cloudflare D1 binding named `DB` and apply the checked-in D
 
 ## Verification
 
-`pnpm test` exercises the actual API route with an in-memory SQLite D1 adapter: name-only joins, invalid/full rooms, ten players, host controls, movement sync, shared damage feedback and scores, five stage gates, slow/medium AI, down/revive/team wipe, PvP, and three replay cycles with clean scoring resets. `pnpm run typecheck` and `pnpm build` verify the client and Worker bundle. See [the manual device checklist](docs/TESTING.md) for checks that require separate browsers and phones.
+`pnpm test` exercises the actual API route with an in-memory SQLite D1 adapter: name-only joins, invalid/full rooms, ten players, host controls, movement sync, shared damage feedback and scores, five stage gates, slow/medium/hard AI, down/revive/team wipe, PvP, and three replay cycles with clean scoring resets. `pnpm run typecheck` and `pnpm build` verify the client and Worker bundle. See [the manual device checklist](docs/TESTING.md) for checks that require separate browsers and phones.
 
 The source is public here for review. The hosted review build remains owner-private until its owner explicitly approves wider access and contest submission.
