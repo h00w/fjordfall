@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Fjordfall — The Five Hunts",
+  title: "Fjordfall — The Dragon Hunt",
   description: "A cooperative Viking monster hunt across islands, sky waterfalls, sea and the depths. Join a crew by room code.",
   icons: {
     icon: "/favicon.svg",
