@@ -207,7 +207,7 @@ async function command(body: Record<string,unknown>) {
     if (distance(player,GATE)>18) return fail("Move closer to the Rune Gate.",409);
     const next=room.stage+1;
     const changed = await db().prepare("UPDATE rooms SET stage = ?, hp = ?, enemy_x = 72, enemy_y = 50, last_tick_at = ?, updated_at = ?, event_seq = event_seq + 1, message = ? WHERE code = ? AND stage = ? AND hp = 0 AND status = 'running'")
-      .bind(next,stageMonsterHp(next,room.difficulty as "slow" | "medium" | "hard"),now,now,`Level up! The crew enters ${STAGES[next].realm}. Max HP ${playerMaxHp(next)}.`,code,room.stage).run();
+      .bind(next,stageMonsterHp(next,room.difficulty as "slow" | "medium" | "hard"),now,now,`The crew enters ${STAGES[next].realm}. Max HP ${playerMaxHp(next)}.`,code,room.stage).run();
     if (changed.meta.changes) await db().prepare("UPDATE players SET x = 18, y = 20 + ((rowid - 1) % 10) * 6, hp = ?, revive_target = NULL, revive_started_at = 0 WHERE room_code = ?").bind(playerMaxHp(next),code).run();
     return snapshot(code,player.id);
   }
@@ -241,8 +241,10 @@ async function command(body: Record<string,unknown>) {
     await db().prepare("UPDATE rooms SET last_hit_by = ?, last_hit_target = 'enemy', last_hit_damage = ?, last_hit_at = ? WHERE code = ?").bind(player.id,damage,now,code).run();
     const after=await roomByCode(code);
     if (after?.hp===0) {
-      if (room.stage===STAGES.length-1) await db().prepare("UPDATE rooms SET status = 'victory', event_seq = event_seq + 1, message = 'Fjordwyrm defeated. The fjord is free!' WHERE code = ? AND stage = ? AND hp = 0 AND status = 'running'").bind(code,room.stage).run();
-      else await announce(code,`${STAGES[room.stage].monster} defeated! Reach the Rune Gate.`);
+      await db().prepare("UPDATE players SET hp = MIN(?, hp + 2) WHERE room_code = ? AND hp > 0")
+        .bind(playerMaxHp(room.stage + 1),code).run();
+      if (room.stage===STAGES.length-1) await db().prepare("UPDATE rooms SET status = 'victory', event_seq = event_seq + 1, message = 'LEVEL UP! Fjordwyrm defeated · +2 HP. The fjord is free!' WHERE code = ? AND stage = ? AND hp = 0 AND status = 'running'").bind(code,room.stage).run();
+      else await announce(code,`LEVEL UP! ${STAGES[room.stage].monster} defeated · +2 HP. Reach the Rune Gate.`);
     }
     return snapshot(code,player.id);
   }

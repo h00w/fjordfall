@@ -40,7 +40,7 @@ export function stageMonsterHp(stage: number, difficulty: GameState["difficulty"
   return difficulty === "hard" ? Math.ceil(base * 1.5) : base;
 }
 export const playerMaxHp = (stage: number, mode: GameState["mode"] = "expedition") =>
-  10 + (mode === "expedition" ? stage : 0);
+  10 + (mode === "expedition" ? stage * 2 : 0);
 
 export function monsterStrike(difficulty: GameState["difficulty"], stage: number, roll: number) {
   const base = AI_SETTINGS[difficulty].damage + stage;
