@@ -2,7 +2,7 @@
 
 <img src="assets/fjordfall-contest-cover.webp" alt="Fjordfall Vikings face the dragon across the five realms" width="100%">
 
-# Fjordfall: The Five Hunts
+# Fjordfall: The Dragon Hunt
 
 **Gather your warband. Hunt across five realms. Face the dragon.**
 
