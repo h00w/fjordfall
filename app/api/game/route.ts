@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { AI_SETTINGS, cleanCode, cleanName, distance, GATE, MAX_PLAYERS, MONSTER, STAGES } from "@/lib/game";
+import { AI_SETTINGS, cleanCode, cleanName, distance, GATE, MAX_PLAYERS, MONSTER, stageMonsterHp, STAGES } from "@/lib/game";
 
 export const runtime = "edge";
 type Room = {
@@ -30,7 +30,7 @@ async function snapshot(code: string, selfId: string) {
   const now = Date.now();
   const players = await playersIn(code);
   return reply({
-    code, stage: room.stage, hp: room.hp, maxHp: STAGES[room.stage]?.hp ?? 0,
+    code, stage: room.stage, hp: room.hp, maxHp: stageMonsterHp(room.stage, room.difficulty as "slow" | "medium" | "hard"),
     status: room.status, mode: room.mode, difficulty: room.difficulty, hostId: room.host_id,
     round: room.round, enemyX: room.enemy_x, enemyY: room.enemy_y,
     gateOpen: room.status === "running" && room.mode === "expedition" && room.hp === 0,
@@ -173,7 +173,7 @@ async function command(body: Record<string,unknown>) {
     const roster = await playersIn(code);
     if (room.mode === "duel" && roster.filter(p => active(p,now)).length < 2) return fail("A duel needs at least two players.",409,"NEED_OPPONENT");
     await db().prepare("UPDATE rooms SET stage = 0, hp = ?, status = 'running', enemy_x = ?, enemy_y = ?, last_tick_at = ?, round = round + 1, winner_id = NULL, last_hit_by = NULL, last_hit_target = NULL, last_hit_damage = 0, last_hit_at = 0, enemy_strikes = 0, enemy_score = 0, event_seq = event_seq + 1, message = ?, updated_at = ? WHERE code = ?")
-      .bind(STAGES[0].hp,MONSTER.x,MONSTER.y,now,room.mode === "duel" ? "The duel begins!" : "The crew lands on Raven Shore.",now,code).run();
+      .bind(stageMonsterHp(0,room.difficulty as "slow" | "medium" | "hard"),MONSTER.x,MONSTER.y,now,room.mode === "duel" ? "The duel begins!" : "The crew lands on Raven Shore.",now,code).run();
     await db().prepare("UPDATE players SET x = 18, y = 20 + ((rowid - 1) % 10) * 6, hp = 10, strikes = 0, score = 0, revives = 0, ready = 0, direction = 'right', revive_target = NULL, revive_started_at = 0, last_attack_at = 0, last_move_at = 0 WHERE room_code = ?").bind(code).run();
     return snapshot(code,player.id);
   }
@@ -207,7 +207,7 @@ async function command(body: Record<string,unknown>) {
     if (distance(player,GATE)>18) return fail("Move closer to the Rune Gate.",409);
     const next=room.stage+1;
     const changed = await db().prepare("UPDATE rooms SET stage = ?, hp = ?, enemy_x = 72, enemy_y = 50, last_tick_at = ?, updated_at = ?, event_seq = event_seq + 1, message = ? WHERE code = ? AND stage = ? AND hp = 0 AND status = 'running'")
-      .bind(next,STAGES[next].hp,now,now,`The crew enters ${STAGES[next].realm}.`,code,room.stage).run();
+      .bind(next,stageMonsterHp(next,room.difficulty as "slow" | "medium" | "hard"),now,now,`The crew enters ${STAGES[next].realm}.`,code,room.stage).run();
     if (changed.meta.changes) await db().prepare("UPDATE players SET x = 18, y = 20 + ((rowid - 1) % 10) * 6, hp = 10, revive_target = NULL, revive_started_at = 0 WHERE room_code = ?").bind(code).run();
     return snapshot(code,player.id);
   }
