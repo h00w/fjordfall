@@ -3,7 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import { readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { stageMonsterHp } from "../lib/game.ts";
+import { monsterStrike, playerMaxHp, stageMonsterHp } from "../lib/game.ts";
 
 // Run the actual route against an in-memory SQLite implementation of D1's
 // prepared-statement API. No deployed user room is touched.
@@ -55,6 +55,13 @@ try {
     for(let i=0;i<n;i++){advance(100);const r=await call({type:"move",...player,dx,dy});assert.equal(r.status,200,JSON.stringify(r.body));}
   };
   const host=await create("Astrid");
+  for (let stage=0;stage<5;stage++) {
+    assert.equal(playerMaxHp(stage),10+stage);
+    assert.equal(playerMaxHp(stage,"duel"),10);
+    assert.deepEqual(monsterStrike("hard",stage,0.5),{damage:3+stage,critical:false});
+    assert.deepEqual(monsterStrike("hard",stage,0.05),{damage:5+stage,critical:true});
+    assert.deepEqual(monsterStrike("hard",stage,0.15),{damage:6+stage,critical:true});
+  }
   const mate=await join(host.code,"Leif");
   assert.equal((await state(host)).players.length,2);
   assert.equal((await call({type:"join",code:"ZZZZZZ",name:"Lost"})).body.code,"ROOM_NOT_FOUND");
@@ -88,6 +95,8 @@ try {
       const gate=await call({type:"interact",...host});
       assert.equal(gate.status,200,JSON.stringify(gate.body));
       assert.equal(gate.body.stage,stage+1);
+      assert.match(gate.body.message,/Level up!/);
+      assert.ok(gate.body.players.every(p=>p.hp===11+stage),"all crew gain one max HP at each gate");
       assert.equal((await state(mate)).stage,stage+1);
     } else assert.equal(current.status,"victory");
   }
@@ -157,7 +166,7 @@ try {
   assert.ok(hardState.enemyX<72 || hardState.enemyY<50,"hard AI reacts in under 800 ms");
   for(let i=0;i<15&&hardState.enemyStrikes===0;i++){advance(600);hardState=await state(hardHost);}
   assert.ok(hardState.enemyStrikes>0,"hard AI closes the distance");
-  assert.equal(hardState.lastHit.damage,3,"hard AI deals three damage per strike");
+  assert.ok([3,5,6].includes(hardState.lastHit.damage),"hard AI deals base damage or a +2/+3 critical");
 
   // Down, revive after three seconds, team wipe, then clean replay.
   const rescueHost=await create("Healer");
