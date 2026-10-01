@@ -4,6 +4,8 @@
 
 # Fjordfall: The Dragon Hunt
 
+**Host on your own account:** [External hosting instructions](EXTERNAL_HOSTING.md) include a standalone Cloudflare Workers + D1 build, database setup and custom domain steps.
+
 **Gather your warband. Hunt across five realms. Face the dragon.**
 
 [![Build and game flow](https://github.com/h00w/fjordfall/actions/workflows/ci.yml/badge.svg)](https://github.com/h00w/fjordfall/actions/workflows/ci.yml)

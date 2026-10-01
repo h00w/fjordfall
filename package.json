@@ -11,7 +11,11 @@
     "start": "wrangler dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types scripts/test-game.mjs",
-    "db:generate": "drizzle-kit generate"
+    "db:generate": "drizzle-kit generate",
+    "configure:cloudflare": "node scripts/configure-cloudflare.mjs",
+    "build:cloudflare": "vinext build --mode cloudflare",
+    "dev:cloudflare": "vite --mode cloudflare",
+    "deploy:cloudflare": "wrangler deploy --config dist/server/wrangler.json"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

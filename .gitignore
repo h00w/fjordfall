@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+wrangler.cloudflare.json
 /.pnp
 .pnp.*
 .yarn/*
