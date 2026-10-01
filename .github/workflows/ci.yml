@@ -22,5 +22,6 @@ jobs:
         run: |
           pnpm configure:cloudflare 11111111-1111-4111-8111-111111111111
           pnpm exec wrangler d1 migrations apply fjordfall-db --local --config wrangler.cloudflare.json
-          pnpm build:cloudflare
+          WORKERS_CI=1 pnpm exec vinext build
+          node --input-type=module -e 'import fs from "node:fs"; import assert from "node:assert/strict"; const c = JSON.parse(fs.readFileSync("dist/server/wrangler.json")); assert.equal(c.name, "fjordfall"); assert.equal(c.d1_databases[0].database_id, "11111111-1111-4111-8111-111111111111"); assert.equal(c.d1_databases[0].database_name, "fjordfall-db");'
           pnpm exec wrangler deploy --dry-run --config dist/server/wrangler.json

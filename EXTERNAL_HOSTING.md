@@ -4,6 +4,30 @@ Yes. This source package can run independently on your own Cloudflare account, u
 
 The ZIP contains the full source, artwork, public assets, dependency lockfile, SQL migrations and this guide. Install dependencies locally; `node_modules`, credentials, generated build files and live game data are excluded.
 
+## Cloudflare dashboard Git deployment (fix for error 10181)
+
+If your log says `D1 binding 'DB' references database '00000000-0000-4000-8000-000000000000' which was not found`, the build used the Sites preview database. The repository now detects Cloudflare Workers Builds through its `WORKERS_CI=1` environment variable and uses independent Cloudflare configuration automatically.
+
+In Cloudflare, open **Workers & Pages → fjordfall → Settings → Build**. Use:
+
+| Setting | Value |
+| --- | --- |
+| Repository | `h00w/fjordfall` |
+| Production branch | `main` |
+| Root directory | Repository root (leave blank or `/`) |
+| Build command | `pnpm run build` |
+| Deploy command | `npx wrangler deploy` |
+
+The standard build finds the D1 database named `fjordfall-db` in your account, or creates it when missing. It writes the actual UUID to `wrangler.cloudflare.json`, applies the SQL migrations remotely, and builds the game without Sites middleware. Wrangler's generated deployment configuration points at that actual database. Existing `fjordfall-db` data is retained; migrations are tracked and only pending migrations run.
+
+**One-time permission requirement:** the Workers Builds API token must have **Account → D1 → Edit** for the account containing your Worker. Go to **My Profile → API Tokens**, edit the token selected in your Worker's build settings, and add this permission. Cloudflare's automatically generated build token may not include D1 access. Keep the token in Cloudflare; never commit or paste it into this repository.
+
+If you already have another database, add the build variable `CLOUDFLARE_D1_DATABASE_ID` with its real UUID (and optionally `CLOUDFLARE_D1_DATABASE_NAME` with its name). Set these under **Build Variables and Secrets**, so the build process can read them. These are database identities, not API tokens. Do not use the all-zero placeholder. `CLOUDFLARE_WORKER_NAME` optionally overrides `fjordfall`.
+
+Save the settings and retry the deployment using the latest `main` commit. Then open your actual URL, e.g. `https://fjordfall.hendar-rise.workers.dev`, create a room and join in a second browser.
+
+The steps below remain available for local development and manual CLI deployment.
+
 ## 1. Download and install
 
 Extract the ZIP and open a terminal in its `fjordfall` directory (the directory with `package.json`). Alternatively clone https://github.com/h00w/fjordfall.
@@ -96,6 +120,7 @@ The package was checked with typecheck, game regression tests, an independent Cl
 
 - https://developers.cloudflare.com/workers/framework-guides/web-apps/nextjs/
 - https://developers.cloudflare.com/workers/vite-plugin/reference/api/
+- https://developers.cloudflare.com/workers/ci-cd/builds/configuration/
 - https://developers.cloudflare.com/d1/reference/migrations/
 - https://developers.cloudflare.com/workers/configuration/routing/custom-domains/
 
