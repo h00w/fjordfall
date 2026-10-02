@@ -252,8 +252,19 @@ async function command(body: Record<string,unknown>) {
 }
 
 export async function POST(request: Request) {
+  let payload: unknown;
   try {
-    const body=await request.json() as Record<string,unknown>;
+    payload = await request.json();
+  } catch {
+    return fail("Send a valid JSON game action.",400,"INVALID_REQUEST");
+  }
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)
+      || typeof (payload as Record<string,unknown>).type !== "string"
+      || !(payload as Record<string,unknown>).type) {
+    return fail("Send a JSON object with a game action type.",400,"INVALID_REQUEST");
+  }
+  const body = payload as Record<string,unknown>;
+  try {
     return body.type==="create"||body.type==="join" ? enter(body) : command(body);
   } catch(error) {
     console.error("Fjordfall request failed",error);

@@ -54,6 +54,16 @@ try {
   const move = async (player,dx,dy,n=1) => {
     for(let i=0;i<n;i++){advance(100);const r=await call({type:"move",...player,dx,dy});assert.equal(r.status,200,JSON.stringify(r.body));}
   };
+  // Malformed client data must be a 400 and must not create game state.
+  for (const payload of [null, [], 1, "create", {}, {type: 1}, {type: ""}]) {
+    const response = await call(payload);
+    assert.equal(response.status,400);
+    assert.equal(response.body.code,"INVALID_REQUEST");
+  }
+  const malformed = await POST(new Request("http://test/api/game", {method:"POST", body:"{broken"}));
+  assert.equal(malformed.status,400);
+  assert.equal((await malformed.json()).code,"INVALID_REQUEST");
+  assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM rooms").get().n,0);
   const host=await create("Astrid");
   // Regression: critical boundaries preserve the 20% chance and realm scaling.
   for (const [difficulty,base] of [["slow",1],["medium",2],["hard",3]]) {
