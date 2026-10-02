@@ -9,7 +9,7 @@
 **Gather your warband. Hunt across five realms. Face the dragon.**
 
 [![Build and game flow](https://github.com/h00w/fjordfall/actions/workflows/ci.yml/badge.svg)](https://github.com/h00w/fjordfall/actions/workflows/ci.yml)
-[![Public demo](https://img.shields.io/badge/Playable%20demo-public-527D56?style=flat-square)](https://fjordfall-uniplay.hendar2-0.chatgpt.site)
+[![Public demo](https://img.shields.io/badge/Playable%20demo-public-527D56?style=flat-square)](https://fjordfall.hendar-rise.workers.dev/)
 [![Players 1 to 10](https://img.shields.io/badge/Players-1%E2%80%9310-287C85?style=flat-square)](#play-modes)
 [![No game account](https://img.shields.io/badge/Game%20account-not%20required-527D56?style=flat-square)](#how-to-play)
 
@@ -24,7 +24,7 @@ A name-only multiplayer Viking arena for 1–10 people. Create a six-character r
 
 ## Public playable demo
 
-**[Play Fjordfall in your browser](https://fjordfall-uniplay.hendar2-0.chatgpt.site)**. The public deployment is available without a game account. The source and cover art are in this repository so the game can also be run locally.
+**[Play Fjordfall in your browser](https://fjordfall.hendar-rise.workers.dev/)**. The public deployment is available without a game account. The source and cover art are in this repository so the game can also be run locally.
 
 ### How to play
 
