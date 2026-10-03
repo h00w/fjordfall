@@ -265,7 +265,7 @@ export async function POST(request: Request) {
   }
   const body = payload as Record<string,unknown>;
   try {
-    return body.type==="create"||body.type==="join" ? enter(body) : command(body);
+    return await (body.type==="create"||body.type==="join" ? enter(body) : command(body));
   } catch(error) {
     console.error("Fjordfall request failed",error);
     return fail("The expedition is temporarily unavailable. Try again.",500);

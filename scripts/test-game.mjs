@@ -65,6 +65,23 @@ try {
   assert.equal((await malformed.json()).code,"INVALID_REQUEST");
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM rooms").get().n,0);
   const host=await create("Astrid");
+  // Async storage failures must stay inside the route's structured error boundary.
+  const database = globalThis.__fjordfallTestDb;
+  const prepare = database.prepare;
+  const logError = console.error;
+  database.prepare = () => { throw new Error("simulated storage failure"); };
+  console.error = () => {};
+  try {
+    for (const payload of [{type:"create",name:"Unavailable"}, {type:"join",code:host.code,name:"Unavailable"}, {type:"state",...host}]) {
+      const response = await call(payload);
+      assert.equal(response.status,500);
+      assert.equal(response.body.error,"The expedition is temporarily unavailable. Try again.");
+      assert.ok(!JSON.stringify(response.body).includes("simulated storage failure"));
+    }
+  } finally {
+    database.prepare = prepare;
+    console.error = logError;
+  }
   // Regression: critical boundaries preserve the 20% chance and realm scaling.
   for (const [difficulty,base] of [["slow",1],["medium",2],["hard",3]]) {
     for (const stage of [0,4]) {
