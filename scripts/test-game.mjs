@@ -112,6 +112,11 @@ try {
 
   // Five cooperative realms: every accepted strike is canonical; gates advance.
   for(let stage=0;stage<5;stage++){
+    if(stage===1){
+      const late=await join(host.code,"Late crew");
+      assert.equal((await state(late)).players.find(p=>p.id===late.id).hp,playerMaxHp(stage),"late join inherits the current realm HP");
+      await call({type:"leave",...late});
+    }
     await move(host,1,0,5); await move(host,0,1,3);
     let current=await state(host), safety=0;
     const startingScore=current.players.find(p=>p.id===host.id).score;
@@ -127,6 +132,11 @@ try {
     assert.equal(current.lastHit.target,"enemy");
     assert.match(current.message,/LEVEL UP!/);
     assert.match(current.message,/\+2 HP/);
+    if(stage===1){
+      const late=await join(host.code,"Gate crew");
+      assert.equal((await state(late)).players.find(p=>p.id===late.id).hp,playerMaxHp(stage+1),"join after a kill inherits the +2 HP level reward");
+      await call({type:"leave",...late});
+    }
     if(stage<4){
       assert.equal(current.gateOpen,true);
       await move(host,1,0,5);
