@@ -97,7 +97,7 @@ async function enter(body: Record<string,unknown>) {
   const name = cleanName(body.name);
   if (!name) return fail("Enter a Viking name.",400,"NAME_REQUIRED");
   const now = Date.now(), id = crypto.randomUUID(), token = newToken();
-  let code = cleanCode(body.code);
+  let code = cleanCode(body.code), initialHp = 10;
   if (body.type === "create") {
     for (let i=0;i<5;i++) {
       code = randomCode();
@@ -108,7 +108,9 @@ async function enter(body: Record<string,unknown>) {
       } catch (error) { if (i===4) throw error; }
     }
   } else {
-    if (code.length !== 6 || !(await roomByCode(code))) return fail("Room not found. Check the six-character code.",404,"ROOM_NOT_FOUND");
+    const room = code.length === 6 ? await roomByCode(code) : null;
+    if (!room) return fail("Room not found. Check the six-character code.",404,"ROOM_NOT_FOUND");
+    initialHp = playerMaxHp(room.stage + (room.hp === 0 ? 1 : 0),room.mode as "expedition" | "duel");
     // Expire abandoned tabs so a room does not remain full forever.
     const pruned=await db().prepare("DELETE FROM players WHERE room_code = ? AND seen_at < ?").bind(code,now-600000).run();
     if(pruned.meta.changes) await db().prepare("UPDATE rooms SET slots = MAX(0,slots-?) WHERE code = ?").bind(pruned.meta.changes,code).run();
@@ -123,8 +125,8 @@ async function enter(body: Record<string,unknown>) {
   }
   try {
     const count = await db().prepare("SELECT COUNT(*) AS n FROM players WHERE room_code = ?").bind(code).first<{n:number}>();
-    await db().prepare("INSERT INTO players (id,room_code,token,name,x,y,hp,strikes,score,revives,ready,direction,revive_target,revive_started_at,last_attack_at,last_move_at,seen_at) VALUES (?,?,?,?,18,?,10,0,0,0,0,'right',NULL,0,0,0,?)")
-      .bind(id,code,token,name,25+((count?.n??0)%10)*6,now).run();
+    await db().prepare("INSERT INTO players (id,room_code,token,name,x,y,hp,strikes,score,revives,ready,direction,revive_target,revive_started_at,last_attack_at,last_move_at,seen_at) VALUES (?,?,?,?,18,?,?,0,0,0,0,'right',NULL,0,0,0,?)")
+      .bind(id,code,token,name,25+((count?.n??0)%10)*6,initialHp,now).run();
   } catch (error) {
     await db().prepare("UPDATE rooms SET slots = MAX(0,slots-1) WHERE code = ?").bind(code).run();
     throw error;
