@@ -6,6 +6,18 @@ export const STAGES = [
   { realm: "Dragon's Roost", map: "SKY ISLANDS", monster: "Fjordwyrm", size: "BOSS", hp: 42, accent: "#f6ad67", lore: "The final hunt. Stand together." },
 ] as const;
 
+export const DRAGON_PHASES = [
+  { name: "EMBER WING", lore: "Fjordwyrm guards the high ridge with claw and flame." },
+  { name: "STORMFLIGHT", lore: "Fjordwyrm breaks skyward and strikes from a new perch." },
+  { name: "RAGNARÖK", lore: "Fjordwyrm lands for a final assault beneath the firestorm." },
+] as const;
+
+export function dragonPhase(hp: number, maxHp: number) {
+  if (!Number.isFinite(hp) || !Number.isFinite(maxHp) || maxHp <= 0) return 1;
+  const ratio = Math.max(0, hp) / maxHp;
+  return ratio > 2 / 3 ? 1 : ratio > 1 / 3 ? 2 : 3;
+}
+
 export type GameState = {
   code: string;
   stage: number;

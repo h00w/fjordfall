@@ -3,7 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import { readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { monsterStrike, playerMaxHp, stageMonsterHp } from "../lib/game.ts";
+import { DRAGON_PHASES, dragonPhase, monsterStrike, playerMaxHp, stageMonsterHp } from "../lib/game.ts";
 
 // Run the actual route against an in-memory SQLite implementation of D1's
 // prepared-statement API. No deployed user room is touched.
@@ -91,6 +91,8 @@ try {
     }
   }
   for (const roll of [-0.01,1,NaN,Infinity]) assert.throws(()=>monsterStrike("slow",0,roll),RangeError);
+  assert.equal(DRAGON_PHASES.length,3);
+  assert.deepEqual([42,29,28,15,14,1].map(hp=>dragonPhase(hp,42)),[1,1,2,2,3,3],"dragon HP crosses the two phase thresholds");
   for (let stage=0;stage<5;stage++) {
     assert.equal(playerMaxHp(stage),10+stage*2);
     assert.equal(playerMaxHp(stage,"duel"),10);
@@ -111,6 +113,7 @@ try {
   assert.equal((await state(host)).players.find(p=>p.id===mate.id).x,before+7);
 
   // Five cooperative realms: every accepted strike is canonical; gates advance.
+  const dragonPhaseMessages = new Set();
   for(let stage=0;stage<5;stage++){
     if(stage===1){
       const late=await join(host.code,"Late crew");
@@ -124,6 +127,7 @@ try {
       advance(600);const response=await call({type:"attack",...host});
       assert.equal(response.status,200,JSON.stringify(response.body));
       current=response.body;
+      if(stage===4 && current.message.startsWith("DRAGON PHASE")) dragonPhaseMessages.add(current.message);
     }
     assert.equal(current.hp,0,`stage ${stage} enemy defeated`);
     assert.equal((await state(mate)).hp,0,"shared enemy health");
@@ -143,11 +147,14 @@ try {
       const gate=await call({type:"interact",...host});
       assert.equal(gate.status,200,JSON.stringify(gate.body));
       assert.equal(gate.body.stage,stage+1);
+      assert.match(gate.body.message,/^LONGSHIP PASSAGE · .+ → .+\. Max HP \d+\.$/);
       assert.ok(gate.body.players.every(p=>p.hp===12+stage*2),"all crew retain the +2 HP level reward at each gate");
       assert.equal((await state(mate)).stage,stage+1);
     } else assert.equal(current.status,"victory");
   }
   assert.equal((await state(mate)).status,"victory");
+  assert.ok([...dragonPhaseMessages].some(message=>message.includes("DRAGON PHASE 2/3 · STORMFLIGHT")),"dragon enters Stormflight");
+  assert.ok([...dragonPhaseMessages].some(message=>message.includes("DRAGON PHASE 3/3 · RAGNARÖK")),"dragon enters Ragnarök");
   assert.equal((await state(mate)).players.find(p=>p.id===host.id).score,STAGES_HP.reduce((a,b)=>a+b,0)*10+5*80,"final leaderboard total survives realm changes");
   assert.equal((await call({type:"start",...host})).body.round,2);
   assert.equal((await state(host)).players.length,2);

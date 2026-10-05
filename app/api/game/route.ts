@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { AI_SETTINGS, cleanCode, cleanName, distance, GATE, MAX_PLAYERS, MONSTER, monsterStrike, playerMaxHp, stageMonsterHp, STAGES } from "@/lib/game";
+import { AI_SETTINGS, cleanCode, cleanName, distance, DRAGON_PHASES, dragonPhase, GATE, MAX_PLAYERS, MONSTER, monsterStrike, playerMaxHp, stageMonsterHp, STAGES } from "@/lib/game";
 
 export const runtime = "edge";
 type Room = {
@@ -209,7 +209,7 @@ async function command(body: Record<string,unknown>) {
     if (distance(player,GATE)>18) return fail("Move closer to the Rune Gate.",409);
     const next=room.stage+1;
     const changed = await db().prepare("UPDATE rooms SET stage = ?, hp = ?, enemy_x = 72, enemy_y = 50, last_tick_at = ?, updated_at = ?, event_seq = event_seq + 1, message = ? WHERE code = ? AND stage = ? AND hp = 0 AND status = 'running'")
-      .bind(next,stageMonsterHp(next,room.difficulty as "slow" | "medium" | "hard"),now,now,`The crew enters ${STAGES[next].realm}. Max HP ${playerMaxHp(next)}.`,code,room.stage).run();
+      .bind(next,stageMonsterHp(next,room.difficulty as "slow" | "medium" | "hard"),now,now,`LONGSHIP PASSAGE · ${STAGES[room.stage].realm} → ${STAGES[next].realm}. Max HP ${playerMaxHp(next)}.`,code,room.stage).run();
     if (changed.meta.changes) await db().prepare("UPDATE players SET x = 18, y = 20 + ((rowid - 1) % 10) * 6, hp = ?, revive_target = NULL, revive_started_at = 0 WHERE room_code = ?").bind(playerMaxHp(next),code).run();
     return snapshot(code,player.id);
   }
@@ -235,6 +235,7 @@ async function command(body: Record<string,unknown>) {
     }
     if (room.hp===0 || distance(player,{x:room.enemy_x,y:room.enemy_y})>22) return fail(room.hp===0?"The Rune Gate is open.":"Move closer to the monster.",409,"OUT_OF_RANGE");
     // The server applies the player's strike and Viking ally support as one hit.
+    const phaseBefore = room.stage === STAGES.length - 1 ? dragonPhase(room.hp, stageMonsterHp(room.stage, room.difficulty as "slow" | "medium" | "hard")) : 0;
     const hit=await db().prepare("UPDATE rooms SET hp = MAX(0,hp-4), updated_at = ? WHERE code = ? AND stage = ? AND status = 'running' AND hp > 0")
       .bind(now,code,room.stage).run();
     if (!hit.meta.changes) return snapshot(code,player.id);
@@ -242,6 +243,17 @@ async function command(body: Record<string,unknown>) {
     await db().prepare("UPDATE players SET strikes = strikes + 1, score = score + ? WHERE id = ?").bind(damage*10+(room.hp<=4?80:0),player.id).run();
     await db().prepare("UPDATE rooms SET last_hit_by = ?, last_hit_target = 'enemy', last_hit_damage = ?, last_hit_at = ? WHERE code = ?").bind(player.id,damage,now,code).run();
     const after=await roomByCode(code);
+    if (after && room.stage === STAGES.length - 1 && after.hp > 0) {
+      const phaseAfter = dragonPhase(after.hp, stageMonsterHp(room.stage, room.difficulty as "slow" | "medium" | "hard"));
+      if (phaseAfter > phaseBefore) {
+        const profile = DRAGON_PHASES[phaseAfter - 1];
+        const shift = phaseAfter === 2 ? { x: 10, y: -8 } : { x: -10, y: 8 };
+        const enemyX = Math.max(8, Math.min(92, player.x + shift.x));
+        const enemyY = Math.max(10, Math.min(90, player.y + shift.y));
+        await db().prepare("UPDATE rooms SET enemy_x = ?, enemy_y = ?, event_seq = event_seq + 1, message = ? WHERE code = ? AND stage = ? AND hp = ? AND status = 'running'")
+          .bind(enemyX,enemyY,`DRAGON PHASE ${phaseAfter}/3 · ${profile.name}: ${profile.lore}`,code,room.stage,after.hp).run();
+      }
+    }
     if (after?.hp===0) {
       await db().prepare("UPDATE players SET hp = MIN(?, hp + 2) WHERE room_code = ? AND hp > 0")
         .bind(playerMaxHp(room.stage + 1),code).run();
