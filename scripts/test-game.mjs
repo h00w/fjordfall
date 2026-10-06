@@ -32,6 +32,16 @@ writeFileSync(temp, source);
 let clock = 1_000_000;
 const realNow = Date.now;
 Date.now = () => clock;
+// Critical strike boundaries are covered directly below. Keep AI damage fixed
+// in the route scenarios so random critical hits cannot kill a test healer.
+const realRandomValues = crypto.getRandomValues;
+crypto.getRandomValues = function(buffer) {
+  if (buffer instanceof Uint32Array) {
+    buffer.fill(2 ** 31);
+    return buffer;
+  }
+  return realRandomValues.call(crypto,buffer);
+};
 try {
   const { POST } = await import(temp);
   async function call(payload) {
@@ -233,7 +243,14 @@ try {
   assert.equal(down.hp,0,"AI downs a player");
   const revive=await call({type:"revive",...rescueHost});
   assert.equal(revive.status,200,JSON.stringify(revive.body));
-  advance(3001);
+  const reviveStartedAt = revive.body.players.find(p => p.id === rescueHost.id).reviveStartedAt;
+  for (let repeat=0;repeat<2;repeat++) {
+    advance(1000);
+    const repeated = await call({type:"revive",...rescueHost});
+    assert.equal(repeated.status,200,JSON.stringify(repeated.body));
+    assert.equal(repeated.body.players.find(p => p.id === rescueHost.id).reviveStartedAt,reviveStartedAt,"holding revive must not restart its timer");
+  }
+  advance(1001);
   const restored=await state(rescueHost);
   assert.ok(restored.players.find(p=>p.id===victim.id).hp>0,"three-second teammate revive");
   assert.equal(restored.players.find(p=>p.id===rescueHost.id).score,50,"revival points and leaderboard update");
@@ -252,6 +269,7 @@ try {
   console.log("PASS: name-only join, 10-player cap, shared combat feedback/scoring, five hunts/gates, AI speeds, revive/defeat, PvP and three replay cycles");
 } finally {
   Date.now=realNow;
+  crypto.getRandomValues=realRandomValues;
   unlinkSync(temp);
   sqlite.close();
 }

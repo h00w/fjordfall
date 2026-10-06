@@ -199,6 +199,7 @@ async function command(body: Record<string,unknown>) {
     const downed = roster.filter(p => p.hp===0 && p.id!==player!.id && distance(p,player!)<=16);
     if (!downed.length) return fail("Move beside a downed teammate.",409,"NO_REVIVE_TARGET");
     const target = downed[0];
+    if (player.revive_target === target.id) return snapshot(code,player.id);
     await db().prepare("UPDATE players SET revive_target = ?, revive_started_at = ? WHERE id = ? AND hp > 0")
       .bind(target.id,now,player.id).run();
     await announce(code,`${player.name} is reviving ${target.name}…`);
