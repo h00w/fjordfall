@@ -63,7 +63,9 @@ export const MONSTER = { x: 72, y: 50 };
 export const GATE = { x: 88, y: 50 };
 export const distance = (a: {x:number;y:number}, b: {x:number;y:number}) => Math.hypot(a.x-b.x,a.y-b.y);
 export function cleanName(value: unknown) {
-  return typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, 18) : "";
+  return typeof value === "string"
+    ? value.replace(/[\p{Cc}\p{Cf}]+/gu, " ").trim().replace(/\s+/g, " ").slice(0, 18)
+    : "";
 }
 export function cleanCode(value: unknown) {
   return typeof value === "string" ? value.trim().toUpperCase().replace(/[^A-Z2-9]/g, "").slice(0, 6) : "";
