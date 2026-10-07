@@ -3,7 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import { readFileSync, writeFileSync, unlinkSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { DRAGON_PHASES, dragonPhase, monsterStrike, playerMaxHp, stageMonsterHp } from "../lib/game.ts";
+import { cleanName, DRAGON_PHASES, dragonPhase, monsterStrike, playerMaxHp, stageMonsterHp } from "../lib/game.ts";
 
 // Run the actual route against an in-memory SQLite implementation of D1's
 // prepared-statement API. No deployed user room is touched.
@@ -74,6 +74,10 @@ try {
   assert.equal(malformed.status,400);
   assert.equal((await malformed.json()).code,"INVALID_REQUEST");
   assert.equal(sqlite.prepare("SELECT COUNT(*) AS n FROM rooms").get().n,0);
+  assert.equal(cleanName("Astrid\u202Eevil\u0000"), "Astrid evil", "control characters cannot hide name content");
+  const invisibleName = await call({type:"create",name:"\u200B\u0000"});
+  assert.equal(invisibleName.status,400);
+  assert.equal(invisibleName.body.code,"NAME_REQUIRED");
   const host=await create("Astrid");
   // Async storage failures must stay inside the route's structured error boundary.
   const database = globalThis.__fjordfallTestDb;
