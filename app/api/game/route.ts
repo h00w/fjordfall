@@ -186,8 +186,8 @@ async function command(body: Record<string,unknown>) {
   if (room.status !== "running") return fail("The host has not started a hunt.",409,"NOT_RUNNING");
   if (player.hp <= 0) return fail("You are down. A teammate can revive you.",409,"PLAYER_DOWN");
   if (body.type === "move") {
-    const dx=Number(body.dx),dy=Number(body.dy);
-    if (!Number.isInteger(dx)||!Number.isInteger(dy)||Math.abs(dx)>1||Math.abs(dy)>1||(!dx&&!dy)) return fail("Invalid movement.",400);
+    const {dx,dy}=body;
+    if (typeof dx!=="number"||typeof dy!=="number"||!Number.isInteger(dx)||!Number.isInteger(dy)||Math.abs(dx)>1||Math.abs(dy)>1||(!dx&&!dy)) return fail("Invalid movement.",400);
     const direction = dx<0?"left":dx>0?"right":dy<0?"up":"down";
     await db().prepare("UPDATE players SET x = MAX(8,MIN(92,x+?)), y = MAX(10,MIN(90,y+?)), direction = ?, revive_target = NULL, revive_started_at = 0, last_move_at = ? WHERE id = ? AND hp > 0 AND last_move_at <= ?")
       .bind(dx*7,dy*7,direction,now,player.id,now-85).run();

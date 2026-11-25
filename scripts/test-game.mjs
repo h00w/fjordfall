@@ -123,6 +123,11 @@ try {
   assert.equal((await call({type:"config",...mate,mode:"duel",difficulty:"medium"})).status,403);
   const before=(await state(host)).players.find(p=>p.id===mate.id).x;
   await call({type:"start",...host});
+  for (const dx of [true, "1", [1]]) {
+    const invalid = await call({type:"move",...mate,dx,dy:0});
+    assert.equal(invalid.status,400);
+  }
+  assert.equal((await state(mate)).players.find(p=>p.id===mate.id).x,before);
   await move(mate,1,0);
   assert.equal((await state(host)).players.find(p=>p.id===mate.id).x,before+7);
 
